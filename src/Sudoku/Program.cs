@@ -33,8 +33,8 @@ namespace Sudoku
         public void SolveSudoku(char[][] source)
         {
             var board = new Board(source);
-            board.Fill(print: true);
-            board.Print(leaveInTheEnd: true);
+            // board.Fill(print: true);
+            // board.Print(leaveInTheEnd: true);
         }
     }
 
@@ -56,10 +56,18 @@ namespace Sudoku
         private const string AllNumbers = "123456789";
 
         private readonly char[][] _board;
+        private readonly string[] _rows;
+        private readonly string[] _columns;
+        private readonly string[] _blocks;
 
         public Board(char[][] board)
         {
             _board = board;
+            _rows = board.Select(row => new string(row.Where(c => c != '.').ToArray())).ToArray();
+            _columns = Enumerable.Range(0, 9).Select(j => 
+                new string(
+                    board.Select(row => row[j]).Where(c => c != '.').ToArray())).ToArray();
+            _columns['c'] = "";
         }
 
         public void Fill(bool print) => DFS(0, print);

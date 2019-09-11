@@ -56,18 +56,26 @@ namespace Sudoku
         private const string AllNumbers = "123456789";
 
         private readonly char[][] _board;
-        private readonly string[] _rows;
+        private readonly bool[][] _rows = new bool[9][];
         private readonly string[] _columns;
         private readonly string[] _blocks;
 
         public Board(char[][] board)
         {
             _board = board;
-            _rows = board.Select(row => new string(row.Where(c => c != '.').ToArray())).ToArray();
+            for (int i = 0; i < board.Length; i++)
+            {
+                _rows[i] = new bool[9];
+                foreach (var c in board[i])
+                {
+                    if (c != '.') _rows[i][c - 49] = true;
+                }
+            }
             _columns = Enumerable.Range(0, 9).Select(j => 
                 new string(
                     board.Select(row => row[j]).Where(c => c != '.').ToArray())).ToArray();
-            _columns['c'] = "";
+
+            Console.WriteLine(_rows);
         }
 
         public void Fill(bool print) => DFS(0, print);

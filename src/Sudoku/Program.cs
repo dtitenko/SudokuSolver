@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 
@@ -33,49 +32,42 @@ namespace Sudoku
         public void SolveSudoku(char[][] source)
         {
             var board = new Board(source);
-            // board.Fill(print: true);
-            // board.Print(leaveInTheEnd: true);
+            board.Fill(print: false);
+            board.Print(leaveInTheEnd: true);
         }
     }
 
     public class Board
     {
-        private static readonly Dictionary<int, int[]> Blocks = new Dictionary<int, int[]>
-        {
-            { 0, new[] { 0, 1, 2 } },
-            { 1, new[] { 0, 1, 2 } },
-            { 2, new[] { 0, 1, 2 } },
-            { 3, new[] { 3, 4, 5 } },
-            { 4, new[] { 3, 4, 5 } },
-            { 5, new[] { 3, 4, 5 } },
-            { 6, new[] { 6, 7, 8 } },
-            { 7, new[] { 6, 7, 8 } },
-            { 8, new[] { 6, 7, 8 } }
-        };
-
         private const string AllNumbers = "123456789";
 
         private readonly char[][] _board;
         private readonly bool[][] _rows = new bool[9][];
-        private readonly string[] _columns;
-        private readonly string[] _blocks;
+        private readonly bool[][] _columns = new bool[9][];
+        private readonly bool[][] _blocks = new bool[9][];
 
         public Board(char[][] board)
         {
             _board = board;
-            for (int i = 0; i < board.Length; i++)
+
+            for (int i = 0; i < 9; i++)
             {
                 _rows[i] = new bool[9];
-                foreach (var c in board[i])
+                _columns[i] = new bool[9];
+                _blocks[i] = new bool[9];
+            }
+
+            for (int i = 0; i < 9; i++)
+            {
+                for (int j = 0; j < 9; j++)
                 {
-                    if (c != '.') _rows[i][c - 49] = true;
+                    var c = board[i][j];
+                    if (c == '.') continue;
+                    _rows[i][c - 49] = true;
+                    _columns[j][c - 49] = true;
+                    _blocks[GetBlockIndex(i, j)][c - 49] = true;
                 }
             }
-            _columns = Enumerable.Range(0, 9).Select(j => 
-                new string(
-                    board.Select(row => row[j]).Where(c => c != '.').ToArray())).ToArray();
-
-            Console.WriteLine(_rows);
         }
 
         public void Fill(bool print) => DFS(0, print);
@@ -92,27 +84,44 @@ namespace Sudoku
 
             foreach (var number in AllNumbers)
             {
-                if (CheckColumn(number, column) && CheckRow(number, row) && CheckBlock(number, row, column))
-                {
-                    _board[row][column] = number;
-                    if (print) Print();
-                    if (DFS(index + 1, print)) return true;
-                }
+                if (!IsValid(number, row, column)) continue;
+                SetNumber(number, row, column);
+                if (print) Print();
+                if (DFS(index + 1, print)) return true;
             }
-            
-            _board[row][column] = '.';
+
+            SetNumber('.', row, column);
             return false;
         }
 
-        private bool CheckRow(char number, int i) =>
-            _board[i].All(n => n == '.' || n != number);
+        private void SetNumber(char number, int row, int column)
+        {
+            var existing = _board[row][column];
+            if (number == existing) return;
+            if (existing != '.')
+            {
+                _columns[column][existing - 49] = false;
+                _rows[row][existing - 49] = false;
+                _blocks[GetBlockIndex(row, column)][existing - 49] = false;
+            }
 
-        private bool CheckColumn(char number, int j) =>
-            Enumerable.Range(0, 9).All(i => _board[i][j] == '.' || _board[i][j] != number);
+            if (number != '.')
+            {
+                _columns[column][number - 49] = true;
+                _rows[row][number - 49] = true;
+                _blocks[GetBlockIndex(row, column)][number - 49] = true;
+            }
 
-        private bool CheckBlock(char number, int i, int j) =>
-            !Blocks[i].Any(row => Blocks[j].Any(column => _board[row][column] != '.' && _board[row][column] == number));
-        
+            _board[row][column] = number;
+        }
+
+        private bool IsValid(char number, int i, int j) =>
+            !_rows[i][number - 49]
+            && !_columns[j][number - 49]
+            && !_blocks[GetBlockIndex(i, j)][number - 49];
+
+        private int GetBlockIndex(int row, int column) => row / 3 * 3 + column / 3;
+
         public void Print(bool leaveInTheEnd = false)
         {
             var board = _board;
